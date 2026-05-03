@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "Rivot Motors",
+    "slug": "rivot-motors-ev-companion",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"]
+  }
+}
