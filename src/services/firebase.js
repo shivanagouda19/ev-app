@@ -20,7 +20,7 @@ const firebaseConfig = {
   databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL || "",
 };
 
-const hasFirebaseConfig = Object.values(firebaseConfig).every((value) => Boolean(value));
+export const hasFirebaseConfig = Object.values(firebaseConfig).every((value) => Boolean(value));
 
 const app = hasFirebaseConfig
   ? getApps().length > 0
@@ -28,7 +28,7 @@ const app = hasFirebaseConfig
     : initializeApp(firebaseConfig)
   : null;
 
-const auth = app ? getAuth(app) : null;
+export const auth = app ? getAuth(app) : null;
 const firestore = app ? getFirestore(app) : null;
 const realtimeDb = app ? getDatabase(app) : null;
 

@@ -1,109 +1,190 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Card, Chip, ProgressBar, SegmentedButtons, Text, useTheme } from "react-native-paper";
-import { fetchTelemetry } from "../services/firebase";
+import { Button, Card, Text, useTheme } from "react-native-paper";
+
+const ACCENT_COLOR = "#00C853";
+const CARD_COLOR = "#1E1E1E";
+
+const CircularProgress = ({ progress, size, strokeWidth, label, sublabel }) => {
+  const rotation = progress * 360;
+  const rightRotation = rotation > 180 ? 180 : rotation;
+  const leftRotation = rotation > 180 ? rotation - 180 : 0;
+  const showLeft = rotation > 180;
+
+  return (
+    <View style={[styles.circleContainer, { width: size, height: size }]}
+    >
+      <View
+        style={[
+          styles.circleBase,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderWidth: strokeWidth,
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.halfWrap,
+          {
+            width: size / 2,
+            height: size,
+            right: 0,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.halfCircle,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              borderWidth: strokeWidth,
+              borderColor: ACCENT_COLOR,
+              left: -size / 2,
+              transform: [{ rotateZ: `${rightRotation}deg` }],
+            },
+          ]}
+        />
+      </View>
+      <View
+        style={[
+          styles.halfWrap,
+          {
+            width: size / 2,
+            height: size,
+            left: 0,
+            opacity: showLeft ? 1 : 0,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.halfCircle,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              borderWidth: strokeWidth,
+              borderColor: ACCENT_COLOR,
+              transform: [{ rotateZ: `${leftRotation}deg` }],
+            },
+          ]}
+        />
+      </View>
+      <View style={styles.circleCenter}>
+        <Text variant="headlineLarge" style={styles.circleValue}>
+          {label}
+        </Text>
+        <Text variant="labelMedium" style={styles.circleLabel}>
+          {sublabel}
+        </Text>
+      </View>
+    </View>
+  );
+};
 
 export default function DashboardScreen() {
   const theme = useTheme();
 
-  // Scooter telemetry state
-  const [batteryPct, setBatteryPct] = useState(86);
+  // Mock data for the dashboard
+  const userName = "Akshay";
+  const batteryPct = 78;
+  const rangeKm = 112;
   const [rideMode, setRideMode] = useState("Eco");
-  const [speedKph, setSpeedKph] = useState(18);
-  const [isCharging, setIsCharging] = useState(false);
-  const [rangeKm, setRangeKm] = useState(42);
-
-  // Fetch initial telemetry (Firebase or mock)
-  useEffect(() => {
-    let isMounted = true;
-    fetchTelemetry("RVT-42").then((data) => {
-      if (!isMounted) {
-        return;
-      }
-      setBatteryPct(data.batteryPct ?? 86);
-      setRideMode(data.rideMode ?? "Eco");
-      setSpeedKph(data.speedKph ?? 18);
-      setIsCharging(Boolean(data.isCharging));
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Update range based on battery and ride mode
-  useEffect(() => {
-    const baseRange = rideMode === "Eco" ? 52 : rideMode === "Normal" ? 45 : 36;
-    const computedRange = Math.max(0, Math.round((batteryPct / 100) * baseRange * 10) / 10);
-    setRangeKm(computedRange);
-  }, [batteryPct, rideMode]);
-
-  // Simulate live telemetry drift
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBatteryPct((prev) => Math.max(0, Number((prev - 0.3).toFixed(1))));
-      setSpeedKph((prev) => (prev + 3) % 35);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
     >
-      <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-        <Card.Content>
-          <Text variant="titleLarge" style={styles.sectionTitle}>
+      {/* Greeting section */}
+      <View style={styles.greeting}>
+        <Text variant="headlineSmall" style={styles.greetingText}>
+          Hey {userName}, Ready to Ride?
+        </Text>
+      </View>
+
+      {/* Battery card with circular progress */}
+      <Card style={[styles.card, { backgroundColor: CARD_COLOR }]}
+      >
+        <Card.Content style={styles.batteryCardContent}>
+          <Text variant="titleMedium" style={styles.cardTitle}>
             Battery
           </Text>
-          <View style={styles.row}>
-            <Text variant="displaySmall" style={styles.statText}>
-              {batteryPct}%
-            </Text>
-            <Chip icon={isCharging ? "flash" : "power"} style={styles.chip}>
-              {isCharging ? "Charging" : "On road"}
-            </Chip>
-          </View>
-          <ProgressBar progress={batteryPct / 100} color={theme.colors.primary} />
+          <CircularProgress
+            progress={batteryPct / 100}
+            size={150}
+            strokeWidth={10}
+            label={`${batteryPct}%`}
+            sublabel="Charge"
+          />
         </Card.Content>
       </Card>
 
-      <View style={styles.grid}>
-        <Card style={[styles.card, styles.halfCard, { backgroundColor: theme.colors.surface }]}>
-          <Card.Content>
-            <Text variant="titleMedium">Range</Text>
-            <Text variant="headlineLarge" style={styles.statText}>
-              {rangeKm} km
-            </Text>
-          </Card.Content>
-        </Card>
-
-        <Card style={[styles.card, styles.halfCard, { backgroundColor: theme.colors.surface }]}>
-          <Card.Content>
-            <Text variant="titleMedium">Speed</Text>
-            <Text variant="headlineLarge" style={styles.statText}>
-              {speedKph} kph
-            </Text>
-          </Card.Content>
-        </Card>
-      </View>
-
-      <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+      {/* Range card */}
+      <Card style={[styles.card, { backgroundColor: CARD_COLOR }]}
+      >
         <Card.Content>
-          <Text variant="titleLarge" style={styles.sectionTitle}>
+          <Text variant="titleMedium" style={styles.cardTitle}>
+            Range Remaining
+          </Text>
+          <Text variant="displaySmall" style={styles.rangeValue}>
+            {rangeKm} km
+          </Text>
+        </Card.Content>
+      </Card>
+
+      {/* Ride mode selector */}
+      <Card style={[styles.card, { backgroundColor: CARD_COLOR }]}
+      >
+        <Card.Content>
+          <Text variant="titleMedium" style={styles.cardTitle}>
             Ride Mode
           </Text>
-          <SegmentedButtons
-            value={rideMode}
-            onValueChange={setRideMode}
-            buttons={[
-              { value: "Eco", label: "Eco" },
-              { value: "Normal", label: "Normal" },
-              { value: "Sport", label: "Sport" },
-            ]}
-          />
+          <View style={styles.modeRow}>
+            {["Eco", "Normal", "Sport"].map((mode) => {
+              const isSelected = rideMode === mode;
+              return (
+                <Button
+                  key={mode}
+                  mode={isSelected ? "contained" : "outlined"}
+                  onPress={() => setRideMode(mode)}
+                  buttonColor={isSelected ? ACCENT_COLOR : "transparent"}
+                  textColor={isSelected ? "#000000" : "#FFFFFF"}
+                  style={styles.modeButton}
+                >
+                  {mode}
+                </Button>
+              );
+            })}
+          </View>
+        </Card.Content>
+      </Card>
+
+      {/* Bottom stats row */}
+      <Card style={[styles.card, { backgroundColor: CARD_COLOR }]}
+      >
+        <Card.Content>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>42</Text>
+              <Text style={styles.statLabel}>Total Rides</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>612 km</Text>
+              <Text style={styles.statLabel}>Total Distance</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>28 hrs</Text>
+              <Text style={styles.statLabel}>Total Hours</Text>
+            </View>
+          </View>
         </Card.Content>
       </Card>
     </ScrollView>
@@ -118,29 +199,83 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 16,
   },
+  greeting: {
+    paddingHorizontal: 4,
+  },
+  greetingText: {
+    color: "#FFFFFF",
+  },
   card: {
     borderRadius: 16,
   },
-  sectionTitle: {
+  cardTitle: {
+    color: "#FFFFFF",
     marginBottom: 12,
   },
-  row: {
+  batteryCardContent: {
+    alignItems: "center",
+  },
+  circleContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  circleBase: {
+    position: "absolute",
+    borderColor: "#2A2A2A",
+  },
+  halfWrap: {
+    position: "absolute",
+    top: 0,
+    overflow: "hidden",
+  },
+  halfCircle: {
+    position: "absolute",
+    top: 0,
+  },
+  circleCenter: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  circleValue: {
+    color: "#FFFFFF",
+  },
+  circleLabel: {
+    color: "#B0B0B0",
+  },
+  rangeValue: {
+    color: "#FFFFFF",
+  },
+  modeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  modeButton: {
+    flex: 1,
+    borderColor: ACCENT_COLOR,
+  },
+  statsRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
   },
-  statText: {
-    color: "#FFFFFF",
-  },
-  chip: {
-    backgroundColor: "#2A2A2A",
-  },
-  grid: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  halfCard: {
+  statItem: {
     flex: 1,
+    alignItems: "center",
+  },
+  statValue: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  statLabel: {
+    color: "#B0B0B0",
+    marginTop: 4,
+  },
+  statDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: "#2A2A2A",
   },
 });

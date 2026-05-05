@@ -1,13 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
-import { Button, Card, HelperText, Text, TextInput, useTheme } from "react-native-paper";
-import { signIn, signUp } from "../services/firebase";
+import {
+  Button,
+  Card,
+  HelperText,
+  SegmentedButtons,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { auth, hasFirebaseConfig } from "../services/firebase";
+import { mockUser } from "../data/mockData";
 
-export default function LoginScreen({ onAuthSuccess }) {
+export default function LoginScreen({ navigation, onAuthSuccess }) {
   const theme = useTheme();
 
+  // Tab selection state
+  const [authMode, setAuthMode] = useState("login");
+
   // Form state and UX flags
-  const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState("Ava Rider");
   const [email, setEmail] = useState("rider@rivot.com");
   const [password, setPassword] = useState("password123");
   const [loading, setLoading] = useState(false);
@@ -16,16 +29,53 @@ export default function LoginScreen({ onAuthSuccess }) {
   // Clear errors as the user edits input
   useEffect(() => {
     setError("");
-  }, [email, password, isLogin]);
+  }, [name, email, password, authMode]);
 
-  // Submit auth request using Firebase or mock fallback
-  const handleSubmit = async () => {
+  // Firebase auth: login
+  const handleLogin = async () => {
     setLoading(true);
     try {
-      const user = isLogin ? await signIn(email, password) : await signUp(email, password);
+      const user = hasFirebaseConfig && auth
+        ? await signInWithEmailAndPassword(auth, email, password).then((result) => ({
+            id: result.user.uid,
+            name: result.user.displayName || mockUser.name,
+            email: result.user.email || email,
+            phone: mockUser.phone,
+            scooterId: mockUser.scooterId,
+          }))
+        : { ...mockUser, email };
       onAuthSuccess(user);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Main" }],
+      });
     } catch (err) {
       setError(err?.message || "Unable to authenticate.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Firebase auth: signup
+  const handleSignup = async () => {
+    setLoading(true);
+    try {
+      const user = hasFirebaseConfig && auth
+        ? await createUserWithEmailAndPassword(auth, email, password).then((result) => ({
+            id: result.user.uid,
+            name: name || mockUser.name,
+            email: result.user.email || email,
+            phone: mockUser.phone,
+            scooterId: mockUser.scooterId,
+          }))
+        : { ...mockUser, name: name || mockUser.name, email };
+      onAuthSuccess(user);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Main" }],
+      });
+    } catch (err) {
+      setError(err?.message || "Unable to create account.");
     } finally {
       setLoading(false);
     }
@@ -47,9 +97,32 @@ export default function LoginScreen({ onAuthSuccess }) {
         <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
           <Card.Content>
             <Text variant="titleLarge" style={styles.sectionTitle}>
-              {isLogin ? "Welcome back" : "Create account"}
+              {authMode === "login" ? "Welcome back" : "Create account"}
             </Text>
 
+            {/* Auth mode tabs */}
+            <SegmentedButtons
+              value={authMode}
+              onValueChange={setAuthMode}
+              style={styles.tabs}
+              buttons={[
+                { value: "login", label: "Login" },
+                { value: "signup", label: "Signup" },
+              ]}
+            />
+
+            {/* Signup-only name field */}
+            {authMode === "signup" ? (
+              <TextInput
+                label="Full Name"
+                value={name}
+                onChangeText={setName}
+                mode="outlined"
+                style={styles.input}
+              />
+            ) : null}
+
+            {/* Shared email + password fields */}
             <TextInput
               label="Email"
               value={email}
@@ -68,26 +141,20 @@ export default function LoginScreen({ onAuthSuccess }) {
               style={styles.input}
             />
 
+            {/* Inline error message */}
             <HelperText type="error" visible={Boolean(error)}>
               {error}
             </HelperText>
 
+            {/* Primary action */}
             <Button
               mode="contained"
-              onPress={handleSubmit}
+              onPress={authMode === "login" ? handleLogin : handleSignup}
               loading={loading}
               disabled={loading}
               style={styles.primaryButton}
             >
-              {isLogin ? "Log in" : "Sign up"}
-            </Button>
-
-            <Button
-              mode="text"
-              onPress={() => setIsLogin((prev) => !prev)}
-              textColor={theme.colors.primary}
-            >
-              {isLogin ? "Need an account? Sign up" : "Already have an account? Log in"}
+              {authMode === "login" ? "Log in" : "Sign up"}
             </Button>
           </Card.Content>
         </Card>
@@ -120,6 +187,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: "#FFFFFF",
+    marginBottom: 16,
+  },
+  tabs: {
     marginBottom: 16,
   },
   input: {
