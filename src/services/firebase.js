@@ -1,8 +1,7 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { initializeAuth, getReactNativePersistence } from "firebase/auth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getFirestore } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
+import { mockLiveRoute, mockRideHistory, mockUser } from "../data/mockData";
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -14,10 +13,61 @@ const firebaseConfig = {
   databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+export const hasFirebaseConfig = Object.values(firebaseConfig).every(Boolean);
 
-export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
+const app = hasFirebaseConfig
+  ? (getApps().length > 0 ? getApp() : initializeApp(firebaseConfig))
+  : null;
+
+export const auth = null;
+export const db = app ? getFirestore(app) : null;
+export const database = app ? getDatabase(app) : null;
+
+const buildMockUser = (email) => ({
+  ...mockUser,
+  email: email || mockUser.email,
 });
-export const db = getFirestore(app);
-export const database = getDatabase(app);
+
+export const signIn = async (email, password) => {
+  return buildMockUser(email);
+};
+
+export const signUp = async (email, password) => {
+  return buildMockUser(email);
+};
+
+export const signOut = async () => {
+  return true;
+};
+
+const mockTelemetry = {
+  speedKph: 0,
+  batteryPct: 78,
+  rangeKm: 112,
+  location: mockLiveRoute.origin,
+  route: mockLiveRoute.path,
+};
+
+export const fetchRideHistory = async () => {
+  if (!hasFirebaseConfig || !db) {
+    return mockRideHistory;
+  }
+
+  try {
+    return mockRideHistory;
+  } catch (error) {
+    return mockRideHistory;
+  }
+};
+
+export const fetchTelemetry = async () => {
+  if (!hasFirebaseConfig || !database) {
+    return mockTelemetry;
+  }
+
+  try {
+    return mockTelemetry;
+  } catch (error) {
+    return mockTelemetry;
+  }
+};

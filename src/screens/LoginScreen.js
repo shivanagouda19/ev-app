@@ -47,7 +47,7 @@ export default function LoginScreen({ navigation, onAuthSuccess }) {
       onAuthSuccess(user);
       navigation.reset({
         index: 0,
-        routes: [{ name: "Main" }],
+        routes: [{ name: "MainTabs" }],
       });
     } catch (err) {
       setError(err?.message || "Unable to authenticate.");
@@ -72,7 +72,7 @@ export default function LoginScreen({ navigation, onAuthSuccess }) {
       onAuthSuccess(user);
       navigation.reset({
         index: 0,
-        routes: [{ name: "Main" }],
+        routes: [{ name: "MainTabs" }],
       });
     } catch (err) {
       setError(err?.message || "Unable to create account.");

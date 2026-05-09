@@ -59,16 +59,16 @@ function MainTabs({ user, onSignOut }) {
 // Root navigator switching between auth and app
 export default function RootNavigator({ isSignedIn, onAuthSuccess, onSignOut, user }) {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isSignedIn ? (
-        <Stack.Screen name="Main">
-          {(props) => <MainTabs {...props} user={user} onSignOut={onSignOut} />}
-        </Stack.Screen>
-      ) : (
-        <Stack.Screen name="Auth">
-          {(props) => <LoginScreen {...props} onAuthSuccess={onAuthSuccess} />}
-        </Stack.Screen>
-      )}
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={isSignedIn ? "MainTabs" : "Auth"}
+    >
+      <Stack.Screen name="Auth">
+        {(props) => <LoginScreen {...props} onAuthSuccess={onAuthSuccess} />}
+      </Stack.Screen>
+      <Stack.Screen name="MainTabs">
+        {(props) => <MainTabs {...props} user={user} onSignOut={onSignOut} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }
